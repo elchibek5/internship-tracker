@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -30,5 +31,28 @@ public class ApplicationService {
             return repository.findByCompanyContainingIgnoreCase(company, pageable);
         }
         return repository.findAll(pageable);
+    }
+
+    public Application getById(Long id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Application not found: " + id));
+    }
+
+    public Application update(Long id, Application updated) {
+        Application existing = getById(id);
+
+        existing.setCompany(updated.getCompany());
+        existing.setRoleTitle(updated.getRoleTitle());
+        existing.setLocation(updated.getLocation());
+        existing.setStatus(updated.getStatus());
+        existing.setAppliedDate(updated.getAppliedDate());
+        existing.setNotes(updated.getNotes());
+
+        return repository.save(existing);
+    }
+
+    public void delete(Long id) {
+        Application existing = getById(id);
+        repository.delete(existing);
     }
 }

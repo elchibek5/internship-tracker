@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 
 @RestController
 @RequestMapping("/api/applications")
@@ -26,6 +27,22 @@ public class ApplicationController {
             Pageable pageable
     ) {
         return service.list(status, company, pageable);
+    }
+
+    @GetMapping("/{id}")
+    public Application getOne(@PathVariable Long id) {
+        return service.getById(id);
+    }
+
+    @PutMapping("/{id}")
+    public Application update(@PathVariable Long id, @Valid @RequestBody Application application) {
+        return service.update(id, application);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable Long id) {
+        service.delete(id);
     }
 
 }
