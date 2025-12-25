@@ -1,27 +1,30 @@
 package com.elchibek.internshiptracker.application;
 
+import com.elchibek.internshiptracker.application.dto.ApplicationCreateRequest;
+import com.elchibek.internshiptracker.application.dto.ApplicationResponse;
+import com.elchibek.internshiptracker.application.dto.ApplicationUpdateRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/applications")
 @RequiredArgsConstructor
 public class ApplicationController {
+
     private final ApplicationService service;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Application create(@Valid @RequestBody Application application) {
-        return service.create(application);
+    public ApplicationResponse create(@Valid @RequestBody ApplicationCreateRequest request) {
+        return service.create(request);
     }
 
     @GetMapping
-    public Page<Application> list(
+    public Page<ApplicationResponse> list(
             @RequestParam(required = false) ApplicationStatus status,
             @RequestParam(required = false) String company,
             Pageable pageable
@@ -30,13 +33,13 @@ public class ApplicationController {
     }
 
     @GetMapping("/{id}")
-    public Application getOne(@PathVariable Long id) {
+    public ApplicationResponse getOne(@PathVariable Long id) {
         return service.getById(id);
     }
 
     @PutMapping("/{id}")
-    public Application update(@PathVariable Long id, @Valid @RequestBody Application application) {
-        return service.update(id, application);
+    public ApplicationResponse update(@PathVariable Long id, @Valid @RequestBody ApplicationUpdateRequest request) {
+        return service.update(id, request);
     }
 
     @DeleteMapping("/{id}")
@@ -44,5 +47,4 @@ public class ApplicationController {
     public void delete(@PathVariable Long id) {
         service.delete(id);
     }
-
 }

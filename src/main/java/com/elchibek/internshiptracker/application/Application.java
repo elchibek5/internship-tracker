@@ -1,5 +1,6 @@
 package com.elchibek.internshiptracker.application;
 
+import com.elchibek.internshiptracker.user.User;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -40,4 +41,8 @@ public class Application {
 
     @Column(length = 2000)
     private String notes;
+
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 }
