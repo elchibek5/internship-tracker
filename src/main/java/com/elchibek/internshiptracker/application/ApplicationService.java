@@ -1,58 +1,95 @@
 package com.elchibek.internshiptracker.application;
 
+import com.elchibek.internshiptracker.application.dto.ApplicationCreateRequest;
+import com.elchibek.internshiptracker.application.dto.ApplicationResponse;
+import com.elchibek.internshiptracker.application.dto.ApplicationUpdateRequest;
+import com.elchibek.internshiptracker.user.User;
+import com.elchibek.internshiptracker.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 public class ApplicationService {
 
     private final ApplicationRepository repository;
+    private final UserRepository userRepository;
 
-    public Application create(Application application) {
-        application.setId(null);
-        return repository.save(application);
+    private User currentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getPrincipal() == null) {
+            throw new NotFoundException("No authenticated user");
+        }
+
+        String email = auth.getPrincipal().toString();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("User not found: " + email));
     }
 
-    public Page<Application> list(ApplicationStatus status, String company, Pageable pageable) {
+    public ApplicationResponse create(ApplicationCreateRequest request) {
+        User user = currentUser();
+
+        Application entity = ApplicationMapper.toEntity(request);
+        entity.setId(null);
+        entity.setUser(user);
+
+        return ApplicationMapper.toResponse(repository.save(entity));
+    }
+
+    public Page<ApplicationResponse> list(ApplicationStatus status, String company, Pageable pageable) {
+        User user = currentUser();
+
         boolean hasStatus = status != null;
         boolean hasCompany = company != null && !company.isBlank();
 
+        Page<Application> page;
         if (hasStatus && hasCompany) {
-            return repository.findByStatusAndCompanyContainingIgnoreCase(status, company, pageable);
+            page = repository.findByUserAndStatusAndCompanyContainingIgnoreCase(user, status, company, pageable);
+        } else if (hasStatus) {
+            page = repository.findByUserAndStatus(user, status, pageable);
+        } else if (hasCompany) {
+            page = repository.findByUserAndCompanyContainingIgnoreCase(user, company, pageable);
+        } else {
+            page = repository.findByUser(user, pageable);
         }
-        if (hasStatus) {
-            return repository.findByStatus(status, pageable);
-        }
-        if (hasCompany) {
-            return repository.findByCompanyContainingIgnoreCase(company, pageable);
-        }
-        return repository.findAll(pageable);
+
+        return page.map(ApplicationMapper::toResponse);
     }
 
-    public Application getById(Long id) {
-        return repository.findById(id)
+    public ApplicationResponse getById(Long id) {
+        User user = currentUser();
+
+        Application entity = repository.findByIdAndUser(id, user)
                 .orElseThrow(() -> new NotFoundException("Application not found: " + id));
+
+        return ApplicationMapper.toResponse(entity);
     }
 
-    public Application update(Long id, Application updated) {
-        Application existing = getById(id);
+    public ApplicationResponse update(Long id, ApplicationUpdateRequest request) {
+        User user = currentUser();
 
-        existing.setCompany(updated.getCompany());
-        existing.setRoleTitle(updated.getRoleTitle());
-        existing.setLocation(updated.getLocation());
-        existing.setStatus(updated.getStatus());
-        existing.setAppliedDate(updated.getAppliedDate());
-        existing.setNotes(updated.getNotes());
+        Application existing = repository.findByIdAndUser(id, user)
+                .orElseThrow(() -> new NotFoundException("Application not found: " + id));
 
-        return repository.save(existing);
+        ApplicationMapper.applyUpdate(existing, request);
+
+        return ApplicationMapper.toResponse(repository.save(existing));
     }
 
     public void delete(Long id) {
-        Application existing = getById(id);
+        User user = currentUser();
+
+        // Option A: load then delete (gives clean 404 if not yours)
+        Application existing = repository.findByIdAndUser(id, user)
+                .orElseThrow(() -> new NotFoundException("Application not found: " + id));
+
         repository.delete(existing);
+
+        // Option B: direct delete (faster but doesn't tell you if it existed)
+        // repository.deleteByIdAndUser(id, user);
     }
 }
