@@ -21,3 +21,10 @@ spring:
 logging:
   level:
     org.hibernate.SQL: debug
+
+app:
+  jwt:
+    # Signing key for login tokens (HMAC, at least 32 bytes). Set JWT_SECRET in any real
+    # deployment. Unset, a random key is made at startup, so tokens end on restart.
+    secret: ${JWT_SECRET:${random.uuid}${random.uuid}}
+    expiration-minutes: ${JWT_EXPIRATION_MINUTES:60}
