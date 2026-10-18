@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Build output and OS files ###
+out/
+.DS_Store
